@@ -1,20 +1,43 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """Tuneup assignment"""
 
-__author__ = "???"
-
-import cProfile
-import pstats
+# import re
+import timeit
 import functools
+import pstats
+import cProfile
+import sys
+import io
+
+
+__author__ = "Janell.Huyck"
+"""With help from this blog post on profiling:
+https://zapier.com/engineering/profiling-python-boss/"""
+
+
+if sys.version_info[0] < 3:
+    raise Exception("This program requires python3 interpreter")
 
 
 def profile(func):
     """A function that can be used as a decorator to measure performance"""
-    # You need to understand how decorators are constructed and used.
-    # Be sure to review the lesson material on decorators, they are used
-    # extensively in Django and Flask.
-    raise NotImplementedError("Complete this decorator function")
+
+    @functools.wraps(func)
+    def inner_function(*args, **kwargs):
+
+        pro_object = cProfile.Profile()
+        pro_object.enable()
+        result = func(*args, **kwargs)
+        pro_object.disable()
+        s = io.StringIO()
+        sortby = 'cumulative'
+        ps = pstats.Stats(pro_object, stream=s).strip_dirs().sort_stats(sortby)
+        ps.print_stats()
+        print(s.getvalue())
+
+        return result
+    return inner_function
 
 
 def read_movies(src):
@@ -24,32 +47,37 @@ def read_movies(src):
         return f.read().splitlines()
 
 
-def is_duplicate(title, movies):
-    """returns True if title is within movies list"""
-    for movie in movies:
-        if movie.lower() == title.lower():
-            return True
-    return False
-
-
+@profile
 def find_duplicate_movies(src):
     """Returns a list of duplicate movies from a src list"""
     movies = read_movies(src)
     duplicates = []
-    while movies:
-        movie = movies.pop()
-        if is_duplicate(movie, movies):
+    movie_dict = {}
+    for movie in movies:
+        try:
+            movie_dict[movie] += 1
             duplicates.append(movie)
-    return duplicates
+        except KeyError:
+            movie_dict[movie] = 1
+
+    return list(set(duplicates))
 
 
 def timeit_helper():
-    """Part A:  Obtain some profiling measurements using timeit"""
-    # YOUR CODE GOES HERE
+    """Part A:  Obtain some profiling measurements using
+    timeit on find_duplicate_movies"""
+    t = timeit.Timer(functools.partial(find_duplicate_movies, 'movies.txt'))
+    time_result = min(t.repeat(repeat=7, number=5))/5
+    print("Best time across 7 repeats of 5 runs per repeat:",
+          time_result, " seconds")
 
 
 def main():
     """Computes a list of duplicate movie entries"""
+
+    # enable this code below for the part A of using timeit_helper
+    # timeit_helper()
+
     result = find_duplicate_movies('movies.txt')
     print('Found {} duplicate movies:'.format(len(result)))
     print('\n'.join(result))
