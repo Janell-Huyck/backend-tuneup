@@ -76,7 +76,7 @@ def main():
     """Computes a list of duplicate movie entries"""
 
     # enable this code below for the part A of using timeit_helper
-    # timeit_helper()
+    timeit_helper()
 
     result = find_duplicate_movies('movies.txt')
     print('Found {} duplicate movies:'.format(len(result)))
